@@ -28,7 +28,7 @@ public class RecomendadorSVD {
         SingularValueDecomposition svd = gm.computarSVD(RNorm);
         //Prediccion individual pasamos el indice del cliente(fila), el indice producto(columna)
         //la matriz normalizada, la descomposicion SVD y la dimension k a la cual se reducira S U V
-        double prediccionIndividual = gm.prediccionIndividual(0, 0, RNorm, svd, 2);
+        double prediccionIndividual = gm.prediccionIndividual(0, 0, RNorm, svd, 4);
     }
 
 }

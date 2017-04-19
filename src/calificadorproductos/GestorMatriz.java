@@ -92,7 +92,7 @@ public class GestorMatriz {
         System.out.println("S:");
         svd.getS().print(6, 3);
         System.out.println("V");
-        svd.getV().print(6, 3);
+        svd.getV().transpose().print(6, 3);
         return svd;
     }
 
@@ -108,14 +108,14 @@ public class GestorMatriz {
         System.out.println(" Sk (k = " + k + " matrix:");
         Sk.print(6, 3);
         //Obtener Vk
-        Matrix Vk = subconjuntoMatriz(svd.getV(), n, k);
+        Matrix Vk = subconjuntoMatriz(svd.getV().transpose(), k, n);
         System.out.println(" Vk (k = " + k + " matrix:");
         Vk.print(6, 3);
         //Método simplificado de Newton para obtener Sk^1/2
         Matrix X = Matrix.identity(k, k);
         for (int i = 0; i < 10; i++) {
-            System.out.println("k = " + i);
-            X.print(6, 3);
+            //System.out.println("k = " + i);
+            //X.print(6, 3);
             X = X.plus(Sk.times(X.inverse()));
             X = X.times(0.5);
         }
@@ -126,15 +126,25 @@ public class GestorMatriz {
         System.out.println("Uk*Sk^1/2");
         A.print(6, 3);
         //Matriz Sk^1/2*Vk
-        Matrix B = Vk.times(X);
+        Matrix B = X.times(Vk);
         System.out.println("Vk*Sk^1/2");
         B.print(6, 3);
 
         //Codigo para calcular la prediccion, ultima funcion del informe
         // To compute the prediction we simply calculate the dot product of the cth row of 
         //UkSk1/2 and the pth column of Sk^1/2Vk and add the customer average back.
-        int prediccion = 0;
-
+        double prediccion = 0;
+        
+        //Obtenemos la fila C de la matriz original
+        Matrix tempA = arregloFila(A,cliente,A.getColumnDimension());
+        //Obtenemos la columna P de la matriz original
+        Matrix tempB = arregloColumna(B,B.getRowDimension(),producto);
+        //Producto punto entre ellas
+        Matrix prod = tempA.times(tempB);
+        System.out.println("gautafaq");
+        prod.print(6, 3);
+        prediccion = promediarFilas(RNorm, cliente) + prod.get(0, 0);
+        
         return prediccion;
     }
 
@@ -146,8 +156,40 @@ public class GestorMatriz {
                 nuevaMatrix.set(i, j, matriz.get(i, j));
             }
         }
-
         return nuevaMatrix;
+    }
+    
+    //Obtiene el arreglo de la columna P 
+    private Matrix arregloColumna (Matrix matriz, int m, int p){
+        Matrix nuevaMatrix = new Matrix(m,1);
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j == p; j++) {
+                nuevaMatrix.set(i, 0, matriz.get(i, p));
+            }
+        }
+        return nuevaMatrix;        
+    }
+    
+    //Obtiene el arreglo de la fila P
+    private Matrix arregloFila (Matrix matriz, int p, int n){
+        Matrix nuevaMatrix = new Matrix(1,n);
+        for (int i = 0; i == p; i++) {
+            for (int j = 0; j < n; j++) {
+                nuevaMatrix.set(0, j, matriz.get(p, j));
+            }
+        }
+        return nuevaMatrix;
+    }
+    
+    private double promediarFilas(Matrix matriz, int p){
+        double promedioFilas = 0;
+        for (int i = 0; i == p; i++) {
+            for (int j = 0; j < matriz.getColumnDimension(); j++) {
+                promedioFilas = promedioFilas + matriz.get(i, j);
+            }
+            promedioFilas = promedioFilas / matriz.getRowDimension();
+        }
+        return promedioFilas;
     }
 
     public Matrix getMatrizR() {
