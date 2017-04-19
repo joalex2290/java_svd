@@ -1,0 +1,160 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package calificadorproductos;
+
+import Jama.Matrix;
+import Jama.SingularValueDecomposition;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
+/**
+ *
+ * @author joalexmunoz
+ */
+public class GestorMatriz {
+
+    private final String archivo = "sparse_matrix.txt";
+    private Matrix matrizR;
+    private Matrix matrizRNorm;
+    private final int filas = 7;
+    private final int columnas = 6;
+
+    public Matrix crearMatrizRNorm() throws FileNotFoundException {
+
+        //Leer matriz del archivo
+        double[][] arrayMatrizR = new double[filas][columnas];
+        Scanner lector = new Scanner(new File(this.archivo));
+
+        lector = new Scanner(new File(this.archivo));
+        for (int i = 0; i < filas; ++i) {
+            for (int j = 0; j < columnas; ++j) {
+                if (lector.hasNextDouble()) {
+                    arrayMatrizR[i][j] = lector.nextDouble();
+                }
+            }
+        }
+        this.matrizR = new Matrix(arrayMatrizR);
+        System.out.println("R:");
+        this.matrizR.print(6, 3);
+        //Normalizamos la matriz
+        this.matrizRNorm = this.normalizarMatrizR(arrayMatrizR);
+        return matrizRNorm;
+    }
+
+    public Matrix normalizarMatrizR(double[][] matrizR) {
+        //Obtiene promedios por columna
+        double[] promedioColumnas = new double[columnas];
+        for (int i = 0; i < columnas; i++) {
+            promedioColumnas[i] = 0;
+            for (int j = 0; j < filas; j++) {
+                promedioColumnas[i] = promedioColumnas[i] + matrizR[j][i];
+            }
+            promedioColumnas[i] = promedioColumnas[i] / columnas;
+        }
+        //Remplaza ceros por el promedio de cada columna(producto)
+        for (int i = 0; i < columnas; i++) {
+            for (int j = 0; j < filas; j++) {
+                if (matrizR[j][i] == 0) {
+                    matrizR[j][i] = promedioColumnas[i];
+                }
+            }
+        }
+        //Obtiene promedios por fila(cliente)
+        double[] promedioFilas = new double[filas];
+        for (int i = 0; i < filas; i++) {
+            promedioFilas[i] = 0;
+            for (int j = 0; j < columnas; j++) {
+                promedioFilas[i] = promedioFilas[i] + matrizR[i][j];
+            }
+            promedioFilas[i] = promedioFilas[i] / filas;
+        }
+        //Resta promedios de cliente a cada fila(cliente)
+        for (int i = 0; i < filas; i++) {
+            for (int j = 0; j < columnas; j++) {
+                matrizR[i][j] = matrizR[i][j] - promedioFilas[i];
+            }
+        }
+
+        Matrix RNorm = new Matrix(matrizR);
+        System.out.println("RNorm:");
+        RNorm.print(6, 3);
+        return RNorm;
+    }
+
+    public SingularValueDecomposition computarSVD(Matrix matrix) {
+        SingularValueDecomposition svd = matrix.svd();
+        System.out.println("U:");
+        svd.getU().print(6, 3);
+        System.out.println("S:");
+        svd.getS().print(6, 3);
+        System.out.println("V");
+        svd.getV().print(6, 3);
+        return svd;
+    }
+
+    public double prediccionIndividual(int cliente, int producto, Matrix RNorm, SingularValueDecomposition svd, int k) {
+        int m = RNorm.getRowDimension();
+        int n = RNorm.getColumnDimension();
+        //Obtener Uk
+        Matrix Uk = subconjuntoMatriz(svd.getU(), m, k);
+        System.out.println(" Uk (k = " + k + ") matrix:");
+        Uk.print(6, 3);
+        //Obtener Sk
+        Matrix Sk = subconjuntoMatriz(svd.getS(), k, k);
+        System.out.println(" Sk (k = " + k + " matrix:");
+        Sk.print(6, 3);
+        //Obtener Vk
+        Matrix Vk = subconjuntoMatriz(svd.getV(), n, k);
+        System.out.println(" Vk (k = " + k + " matrix:");
+        Vk.print(6, 3);
+        //Método simplificado de Newton para obtener Sk^1/2
+        Matrix X = Matrix.identity(k, k);
+        for (int i = 0; i < 10; i++) {
+            System.out.println("k = " + i);
+            X.print(6, 3);
+            X = X.plus(Sk.times(X.inverse()));
+            X = X.times(0.5);
+        }
+        System.out.println("Sk^1/2");
+        X.print(6, 3);
+        //Matriz Uk*Sk^1/2
+        Matrix A = Uk.times(X);
+        System.out.println("Uk*Sk^1/2");
+        A.print(6, 3);
+        //Matriz Sk^1/2*Vk
+        Matrix B = Vk.times(X);
+        System.out.println("Vk*Sk^1/2");
+        B.print(6, 3);
+
+        //Codigo para calcular la prediccion, ultima funcion del informe
+        // To compute the prediction we simply calculate the dot product of the cth row of 
+        //UkSk1/2 and the pth column of Sk^1/2Vk and add the customer average back.
+        int prediccion = 0;
+
+        return prediccion;
+    }
+
+    //Obtiene un subconjunto de la matriz (reduce a dimension k) necesaria para obtener Sk, Uk, Vk
+    private Matrix subconjuntoMatriz(Matrix matriz, int m, int n) {
+        Matrix nuevaMatrix = new Matrix(m, n);
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                nuevaMatrix.set(i, j, matriz.get(i, j));
+            }
+        }
+
+        return nuevaMatrix;
+    }
+
+    public Matrix getMatrizR() {
+        return this.matrizR;
+    }
+
+    public Matrix getMatrizRNorm() {
+        return this.matrizRNorm;
+    }
+}
