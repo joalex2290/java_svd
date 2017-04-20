@@ -19,12 +19,12 @@ public class GestorMatriz {
 
     private final String archivo = "sparse_matrix.txt";
     private Matrix matrizR;
+    private Matrix matrizRBin;
     private Matrix matrizRNorm;
     private final int filas = 7;
     private final int columnas = 6;
 
     public Matrix crearMatrizRNorm() throws FileNotFoundException {
-
         //Leer matriz del archivo
         double[][] arrayMatrizR = new double[filas][columnas];
         Scanner lector = new Scanner(new File(this.archivo));
@@ -38,6 +38,7 @@ public class GestorMatriz {
             }
         }
         this.matrizR = new Matrix(arrayMatrizR);
+        this.matrizRBin = this.crearMatrizBinaria(matrizR);
         System.out.println("R:");
         this.matrizR.print(6, 3);
         //Normalizamos la matriz
@@ -45,21 +46,21 @@ public class GestorMatriz {
         return matrizRNorm;
     }
 
-    public Matrix normalizarMatrizR(double[][] matrizR) {
+    public Matrix normalizarMatrizR(double[][] matriz) {
         //Obtiene promedios por columna
         double[] promedioColumnas = new double[columnas];
         for (int i = 0; i < columnas; i++) {
             promedioColumnas[i] = 0;
             for (int j = 0; j < filas; j++) {
-                promedioColumnas[i] = promedioColumnas[i] + matrizR[j][i];
+                promedioColumnas[i] = promedioColumnas[i] + matriz[j][i];
             }
             promedioColumnas[i] = promedioColumnas[i] / columnas;
         }
         //Remplaza ceros por el promedio de cada columna(producto)
         for (int i = 0; i < columnas; i++) {
             for (int j = 0; j < filas; j++) {
-                if (matrizR[j][i] == 0) {
-                    matrizR[j][i] = promedioColumnas[i];
+                if (matriz[j][i] == 0) {
+                    matriz[j][i] = promedioColumnas[i];
                 }
             }
         }
@@ -68,18 +69,18 @@ public class GestorMatriz {
         for (int i = 0; i < filas; i++) {
             promedioFilas[i] = 0;
             for (int j = 0; j < columnas; j++) {
-                promedioFilas[i] = promedioFilas[i] + matrizR[i][j];
+                promedioFilas[i] = promedioFilas[i] + matriz[i][j];
             }
             promedioFilas[i] = promedioFilas[i] / filas;
         }
         //Resta promedios de cliente a cada fila(cliente)
         for (int i = 0; i < filas; i++) {
             for (int j = 0; j < columnas; j++) {
-                matrizR[i][j] = matrizR[i][j] - promedioFilas[i];
+                matriz[i][j] = matriz[i][j] - promedioFilas[i];
             }
         }
 
-        Matrix RNorm = new Matrix(matrizR);
+        Matrix RNorm = new Matrix(matriz);
         System.out.println("RNorm:");
         RNorm.print(6, 3);
         return RNorm;
@@ -109,7 +110,7 @@ public class GestorMatriz {
         Sk.print(6, 3);
         //Obtener Vk
         Matrix Vk = subconjuntoMatriz(svd.getV().transpose(), k, n);
-        System.out.println(" Vk (k = " + k + " matrix:");
+        System.out.println(" Vtk (k = " + k + " matrix:");
         Vk.print(6, 3);
         //Método simplificado de Newton para obtener Sk^1/2
         Matrix X = Matrix.identity(k, k);
@@ -127,7 +128,7 @@ public class GestorMatriz {
         A.print(6, 3);
         //Matriz Sk^1/2*Vk
         Matrix B = X.times(Vk);
-        System.out.println("Vk*Sk^1/2");
+        System.out.println("Vtk*Sk^1/2");
         B.print(6, 3);
 
         //Codigo para calcular la prediccion, ultima funcion del informe
@@ -149,6 +150,49 @@ public class GestorMatriz {
         return prediccion;
     }
 
+    public void recomendar5Productos(double[][] clienteProductos, Matrix RBin, SingularValueDecomposition svd, int k) {
+        int m = RBin.getRowDimension();
+        int n = RBin.getColumnDimension();
+        //Obtener Uk
+        Matrix Uk = subconjuntoMatriz(svd.getU(), m, k);
+        System.out.println(" Uk (k = " + k + ") matrix:");
+        Uk.print(6, 3);
+        //Obtener Sk
+        Matrix Sk = subconjuntoMatriz(svd.getS(), k, k);
+        System.out.println(" Sk (k = " + k + " matrix:");
+        Sk.print(6, 3);
+        //Obtener Vk
+        Matrix Vk = subconjuntoMatriz(svd.getV().transpose(), k, n);
+        System.out.println(" Vtk (k = " + k + " matrix:");
+        Vk.print(6, 3);
+        //Método simplificado de Newton para obtener Sk^1/2
+        Matrix X = Matrix.identity(k, k);
+        for (int i = 0; i < 10; i++) {
+            //System.out.println("k = " + i);
+            //X.print(6, 3);
+            X = X.plus(Sk.times(X.inverse()));
+            X = X.times(0.5);
+        }
+        System.out.println("Sk^1/2");
+        X.print(6, 3);
+        //Matriz Uk*Sk^1/2
+        Matrix A = Uk.times(X);
+        System.out.println("Uk*Sk^1/2");
+        A.print(6, 3);
+
+        Matrix matrizCliente = new Matrix(clienteProductos);
+        System.out.println("Cliente");
+        matrizCliente.print(3, 2);
+
+        Matrix clientePuntaje = matrizCliente.times(Uk).times(Sk.inverse());
+        System.out.println("Cliente puntaje");
+        clientePuntaje.print(3, 2);
+
+        System.out.println("Producto punto entre cliente nuevo y los de la matriz original");
+        clientePuntaje.times(Vk).print(3, 1);
+
+    }
+
     //Obtiene un subconjunto de la matriz (reduce a dimension k) necesaria para obtener Sk, Uk, Vk
     private Matrix subconjuntoMatriz(Matrix matriz, int m, int n) {
         Matrix nuevaMatrix = new Matrix(m, n);
@@ -160,7 +204,7 @@ public class GestorMatriz {
         return nuevaMatrix;
     }
 
-    //Obtiene el arreglo de la fila P
+    //Obtiene el arreglo de la fila c
     private Matrix arregloFila(Matrix matriz, int c, int n) {
         Matrix nuevaMatrix = new Matrix(1, n);
         for (int j = 0; j < n; j++) {
@@ -189,8 +233,26 @@ public class GestorMatriz {
         return promedioFilas;
     }
 
+    //Obtiene el arreglo de la fila P
+    public Matrix crearMatrizBinaria(Matrix matriz) {
+        Matrix nuevaMatrix = new Matrix(this.filas, this.columnas);
+        for (int i = 0; i < filas; i++) {
+            for (int j = 0; j < columnas; j++) {
+                if (matriz.get(i, j) > 0) {
+                    nuevaMatrix.set(i, j, 1);
+                }
+
+            }
+        }
+        return nuevaMatrix;
+    }
+
     public Matrix getMatrizR() {
         return this.matrizR;
+    }
+
+    public Matrix getMatrizRBin() {
+        return this.matrizRBin;
     }
 
     public Matrix getMatrizRNorm() {

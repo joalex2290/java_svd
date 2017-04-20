@@ -24,9 +24,9 @@ public class RecomendadorSVD {
 
         Scanner lector = new Scanner(System.in);
 
-        System.out.print("Ingrese indice cliente (0-7): ");
+        System.out.print("Ingrese indice cliente (0-6): ");
         int cliente = lector.nextInt();
-        System.out.print("Ingrese indice producto (0-6): ");
+        System.out.print("Ingrese indice producto (0-5): ");
         int producto = lector.nextInt();
         lector.close();
 
@@ -38,10 +38,19 @@ public class RecomendadorSVD {
         //Prediccion individual pasamos el indice del cliente(fila), el indice producto(columna)
         //la matriz normalizada, la descomposicion SVD y la dimension k a la cual se reducira S U V
         double prediccionIndividual = gm.prediccionIndividual(cliente, producto, RNorm, svd, 4);
-        
-        System.out.println("Prediccion: "+prediccionIndividual);
-        
-        //CODIGO PARA LLAMAR METODOS USADOS EN LA SEGUNDA PARTE MINIPROYECTO
+
+        System.out.println("Prediccion: " + prediccionIndividual);
+        System.out.println();
+        System.out.println("---- TOP 5 ----");
+        System.out.println("R Bin");
+        gm.getMatrizRBin().print(6, 1);
+
+        SingularValueDecomposition svd2 = gm.computarSVD(gm.getMatrizRBin());
+
+        double[][] clienteProductos = {{1, 0, 0, 0, 1, 1, 0}};
+
+        gm.recomendar5Productos(clienteProductos, gm.getMatrizRBin(), svd2, 4);
+
     }
 
 }
