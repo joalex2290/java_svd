@@ -134,17 +134,18 @@ public class GestorMatriz {
         // To compute the prediction we simply calculate the dot product of the cth row of 
         //UkSk1/2 and the pth column of Sk^1/2Vk and add the customer average back.
         double prediccion = 0;
-        
+
         //Obtenemos la fila C de la matriz original
-        Matrix tempA = arregloFila(A,cliente,A.getColumnDimension());
+        Matrix tempA = arregloFila(A, cliente, A.getColumnDimension());
+        tempA.print(6, 3);
         //Obtenemos la columna P de la matriz original
-        Matrix tempB = arregloColumna(B,B.getRowDimension(),producto);
+        Matrix tempB = arregloColumna(B, B.getRowDimension(), producto);
+        tempB.print(6, 3);
         //Producto punto entre ellas
         Matrix prod = tempA.times(tempB);
-        System.out.println("gautafaq");
-        prod.print(6, 3);
+
         prediccion = promediarFilas(RNorm, cliente) + prod.get(0, 0);
-        
+
         return prediccion;
     }
 
@@ -158,30 +159,26 @@ public class GestorMatriz {
         }
         return nuevaMatrix;
     }
-    
-    //Obtiene el arreglo de la columna P 
-    private Matrix arregloColumna (Matrix matriz, int m, int p){
-        Matrix nuevaMatrix = new Matrix(m,1);
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j == p; j++) {
-                nuevaMatrix.set(i, 0, matriz.get(i, p));
-            }
-        }
-        return nuevaMatrix;        
-    }
-    
+
     //Obtiene el arreglo de la fila P
-    private Matrix arregloFila (Matrix matriz, int p, int n){
-        Matrix nuevaMatrix = new Matrix(1,n);
-        for (int i = 0; i == p; i++) {
-            for (int j = 0; j < n; j++) {
-                nuevaMatrix.set(0, j, matriz.get(p, j));
-            }
+    private Matrix arregloFila(Matrix matriz, int c, int n) {
+        Matrix nuevaMatrix = new Matrix(1, n);
+        for (int j = 0; j < n; j++) {
+            nuevaMatrix.set(0, j, matriz.get(c, j));
         }
         return nuevaMatrix;
     }
-    
-    private double promediarFilas(Matrix matriz, int p){
+
+    //Obtiene el arreglo de la columna P 
+    private Matrix arregloColumna(Matrix matriz, int m, int p) {
+        Matrix nuevaMatrix = new Matrix(m, 1);
+        for (int j = 0; j < m; j++) {
+            nuevaMatrix.set(j, 0, matriz.get(j, p));
+        }
+        return nuevaMatrix;
+    }
+
+    private double promediarFilas(Matrix matriz, int p) {
         double promedioFilas = 0;
         for (int i = 0; i == p; i++) {
             for (int j = 0; j < matriz.getColumnDimension(); j++) {
