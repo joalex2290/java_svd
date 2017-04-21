@@ -9,7 +9,6 @@ import Jama.Matrix;
 import Jama.SingularValueDecomposition;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Arrays;
 import java.util.Scanner;
 import java.util.Vector;
 
@@ -110,10 +109,10 @@ public class GestorMatriz {
         Matrix Sk = subconjuntoMatriz(svd.getS(), k, k);
         System.out.println(" Sk (k = " + k + " matrix:");
         Sk.print(6, 3);
-        //Obtener Vk
-        Matrix Vk = subconjuntoMatriz(svd.getV().transpose(), k, n);
+        //Obtener Vtk
+        Matrix Vtk = subconjuntoMatriz(svd.getV().transpose(), k, n);
         System.out.println(" Vtk (k = " + k + " matrix:");
-        Vk.print(6, 3);
+        Vtk.print(6, 3);
         //Método simplificado de Newton para obtener Sk^1/2
         Matrix X = Matrix.identity(k, k);
         for (int i = 0; i < 10; i++) {
@@ -128,8 +127,8 @@ public class GestorMatriz {
         Matrix A = Uk.times(X);
         System.out.println("Uk*Sk^1/2");
         A.print(6, 3);
-        //Matriz Sk^1/2*Vk
-        Matrix B = X.times(Vk);
+        //Matriz Sk^1/2*Vtk
+        Matrix B = X.times(Vtk);
         System.out.println("Vtk*Sk^1/2");
         B.print(6, 3);
 
@@ -163,10 +162,10 @@ public class GestorMatriz {
         Matrix Sk = subconjuntoMatriz(svd.getS(), k, k);
         System.out.println(" Sk (k = " + k + " matrix:");
         Sk.print(6, 3);
-        //Obtener Vk
-        Matrix Vk = subconjuntoMatriz(svd.getV().transpose(), k, n);
+        //Obtener Vtk
+        Matrix Vtk = subconjuntoMatriz(svd.getV().transpose(), k, n);
         System.out.println(" Vtk (k = " + k + " matrix:");
-        Vk.print(6, 3);
+        Vtk.print(6, 3);
         //Método simplificado de Newton para obtener Sk^1/2
         Matrix X = Matrix.identity(k, k);
         for (int i = 0; i < 10; i++) {
@@ -181,15 +180,19 @@ public class GestorMatriz {
         Matrix A = Uk.times(X);
         System.out.println("Uk*Sk^1/2");
         A.print(6, 3);
-
+        
+        //Creamos matriz del nuevo cliente al cual buscaremos los vecinos(usuarios con compras similares)
         Matrix matrizCliente = new Matrix(cliente);
         System.out.println("Cliente");
         matrizCliente.print(3, 2);
 
+        //Este es el puntaje del nuevo cliente que nos ayudara a calcular la similitud con los demas
         Matrix clientePuntaje = matrizCliente.times(Uk).times(Sk.inverse());
         System.out.println("Cliente puntaje");
         clientePuntaje.print(3, 2);
 
+        //Calculamos la norma del vector del puntaje del nuevo cliente y de los clientes que se encuentra en 
+        //la matriz Vtk
         double normaVectorNuevoCliente = 0;
 
         for (int i = 0; i < 1; i++) {
@@ -206,14 +209,16 @@ public class GestorMatriz {
         System.out.println("Norma vector clientes");
         for (int i = 0; i < columnas; i++) {
             for (int j = 0; j < k; j++) {
-                normaVectorClientes[i] = normaVectorClientes[i] + Math.pow(Vk.get(j, i), 2);
+                normaVectorClientes[i] = normaVectorClientes[i] + Math.pow(Vtk.get(j, i), 2);
             }
             normaVectorClientes[i] = Math.sqrt(normaVectorClientes[i]);
             System.out.println("cliente " + i + "= " + normaVectorClientes[i]);
         }
 
+        //Producto punto de cliente puntaje y Vtk , necesario para la formula que calcula similitud
+        //similitud = producto punto cliente con cada uno de los clientes matriz / norma vector cliente nuevo*norma vector cada uno de los clientes matriz
         System.out.println("Producto punto entre cliente nuevo y los de la matriz original");
-        Matrix productoPuntoClientes = clientePuntaje.times(Vk);
+        Matrix productoPuntoClientes = clientePuntaje.times(Vtk);
         productoPuntoClientes.print(6, 3);
 
         double[] similitudConCliente = new double[columnas];
@@ -227,6 +232,7 @@ public class GestorMatriz {
 
         Vector<Integer> clientesVecinos = new Vector<Integer>();
 
+        //Seleccionamos clientes mayores o iguales al umbral dado, estos seran los vecinos del nuevo cliente
         System.out.println();
         for (int i = 0; i < columnas; i++) {
             if (similitudConCliente[i] >= umbral) {
@@ -235,6 +241,7 @@ public class GestorMatriz {
             }
         }
 
+        //Contamos frecuencia productos adquiridos por clientes similares
         System.out.println();
         int[][] conteoProductos = new int[filas][filas];
         for (int i = 0; i < filas; i++) {
@@ -245,18 +252,20 @@ public class GestorMatriz {
                 }
             }
         }
-        System.out.println("Frecuencia productos");
+        //ordenamos el conteo de mayor a menor
+        System.out.println("Frecuencia productos adquiridos por vecinos");
         int[][] conteoProductosOrdenados = this.ordenarFrecuenciaProductosDesc(1, conteoProductos);
         for (int i = 0; i < filas; i++) {
             System.out.println("Producto " + conteoProductosOrdenados[i][0] + " = " + conteoProductosOrdenados[i][1]);
         }
+        //Recomendamos los primeros 5 productos
         System.out.println();
         for (int i = 0; i < 5; i++) {
             System.out.println("Se recomienda el Producto " + conteoProductosOrdenados[i][0]);
         }
     }
 
-    //Obtiene un subconjunto de la matriz (reduce a dimension k) necesaria para obtener Sk, Uk, Vk
+    //Obtiene un subconjunto de la matriz (reduce a dimension k) necesaria para obtener Sk, Uk, Vtk
     private Matrix subconjuntoMatriz(Matrix matriz, int m, int n) {
         Matrix nuevaMatrix = new Matrix(m, n);
         for (int i = 0; i < m; i++) {

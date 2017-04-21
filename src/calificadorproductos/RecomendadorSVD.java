@@ -25,9 +25,9 @@ public class RecomendadorSVD {
         Scanner lector = new Scanner(System.in);
 
         System.out.println("---- 1 PARTE PREDICCION CLIENTE ----");
-        System.out.print("Ingrese indice cliente (0-6): ");
+        System.out.print("Ingrese indice matriz para el producto (columna 0-6): ");
         int cliente = lector.nextInt();
-        System.out.print("Ingrese indice producto (0-5): ");
+        System.out.print("Ingrese indice matriz para el cliente (fila 0-5): ");
         int producto = lector.nextInt();
         lector.close();
 
@@ -51,8 +51,8 @@ public class RecomendadorSVD {
         //productos adquiridos por el nuevo cliente debe m = m de la matriz del proyecto
         double[][] nuevoCliente = {{1, 0, 1, 0, 1, 1, 0}};
 
-        //umbral 0.9, k = 4
-        gm.recomendar5Productos(nuevoCliente, 0.9, gm.getMatrizRBin(), svd2, 4);
+        //umbral 0.8, k = 4
+        gm.recomendar5Productos(nuevoCliente, 0.8, gm.getMatrizRBin(), svd2, 4);
 
     }
 
