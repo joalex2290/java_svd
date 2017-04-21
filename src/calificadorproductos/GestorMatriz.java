@@ -9,7 +9,9 @@ import Jama.Matrix;
 import Jama.SingularValueDecomposition;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Arrays;
 import java.util.Scanner;
+import java.util.Vector;
 
 /**
  *
@@ -150,7 +152,7 @@ public class GestorMatriz {
         return prediccion;
     }
 
-    public void recomendar5Productos(double[][] clienteProductos, Matrix RBin, SingularValueDecomposition svd, int k) {
+    public void recomendar5Productos(double[][] cliente, double umbral, Matrix RBin, SingularValueDecomposition svd, int k) {
         int m = RBin.getRowDimension();
         int n = RBin.getColumnDimension();
         //Obtener Uk
@@ -180,7 +182,7 @@ public class GestorMatriz {
         System.out.println("Uk*Sk^1/2");
         A.print(6, 3);
 
-        Matrix matrizCliente = new Matrix(clienteProductos);
+        Matrix matrizCliente = new Matrix(cliente);
         System.out.println("Cliente");
         matrizCliente.print(3, 2);
 
@@ -188,9 +190,70 @@ public class GestorMatriz {
         System.out.println("Cliente puntaje");
         clientePuntaje.print(3, 2);
 
-        System.out.println("Producto punto entre cliente nuevo y los de la matriz original");
-        clientePuntaje.times(Vk).print(3, 1);
+        double normaVectorNuevoCliente = 0;
 
+        for (int i = 0; i < 1; i++) {
+            for (int j = 0; j < k; j++) {
+                normaVectorNuevoCliente = Math.pow(clientePuntaje.get(i, j), 2);
+            }
+        }
+        normaVectorNuevoCliente = Math.sqrt(normaVectorNuevoCliente);
+        System.out.println("Norma vector nuevo cliente");
+        System.out.println(normaVectorNuevoCliente);
+
+        double[] normaVectorClientes = new double[columnas];
+
+        System.out.println("Norma vector clientes");
+        for (int i = 0; i < columnas; i++) {
+            for (int j = 0; j < k; j++) {
+                normaVectorClientes[i] = normaVectorClientes[i] + Math.pow(Vk.get(j, i), 2);
+            }
+            normaVectorClientes[i] = Math.sqrt(normaVectorClientes[i]);
+            System.out.println("cliente " + i + "= " + normaVectorClientes[i]);
+        }
+
+        System.out.println("Producto punto entre cliente nuevo y los de la matriz original");
+        Matrix productoPuntoClientes = clientePuntaje.times(Vk);
+        productoPuntoClientes.print(6, 3);
+
+        double[] similitudConCliente = new double[columnas];
+
+        for (int i = 0; i < columnas; i++) {
+            similitudConCliente[i] = productoPuntoClientes.get(0, i) / (normaVectorNuevoCliente * normaVectorClientes[i]);
+            System.out.println("Similitud con cliente " + i + " = " + similitudConCliente[i]);
+        }
+        System.out.println();
+        System.out.println("Umbral para elegir vecinos = " + umbral);
+
+        Vector<Integer> clientesVecinos = new Vector<Integer>();
+
+        System.out.println();
+        for (int i = 0; i < columnas; i++) {
+            if (similitudConCliente[i] >= umbral) {
+                clientesVecinos.add(i);
+                System.out.println("Cliente " + i + " es vecino de nuevo cliente con similitud = " + similitudConCliente[i]);
+            }
+        }
+
+        System.out.println();
+        int[][] conteoProductos = new int[filas][filas];
+        for (int i = 0; i < filas; i++) {
+            for (int j = 0; j < clientesVecinos.size(); j++) {
+                if (RBin.get(i, clientesVecinos.get(j)) == 1) {
+                    conteoProductos[i][0] = i;
+                    conteoProductos[i][1] = conteoProductos[i][1] + 1;
+                }
+            }
+        }
+        System.out.println("Frecuencia productos");
+        int[][] conteoProductosOrdenados = this.ordenarFrecuenciaProductosDesc(1, conteoProductos);
+        for (int i = 0; i < filas; i++) {
+            System.out.println("Producto " + conteoProductosOrdenados[i][0] + " = " + conteoProductosOrdenados[i][1]);
+        }
+        System.out.println();
+        for (int i = 0; i < 5; i++) {
+            System.out.println("Se recomienda el Producto " + conteoProductosOrdenados[i][0]);
+        }
     }
 
     //Obtiene un subconjunto de la matriz (reduce a dimension k) necesaria para obtener Sk, Uk, Vk
@@ -245,6 +308,25 @@ public class GestorMatriz {
             }
         }
         return nuevaMatrix;
+    }
+
+    public int[][] ordenarFrecuenciaProductosDesc(int col, int[][] frecuenciaProductos) {
+        if (col < 0 || col > columnas) {
+            return null;
+        }
+        int aux;
+        for (int i = 0; i < filas; i++) {
+            for (int j = i + 1; j < filas; j++) {
+                if (frecuenciaProductos[i][col] < frecuenciaProductos[j][col]) {
+                    for (int k = 0; k < columnas; k++) {
+                        aux = frecuenciaProductos[i][k];
+                        frecuenciaProductos[i][k] = frecuenciaProductos[j][k];
+                        frecuenciaProductos[j][k] = aux;
+                    }
+                }
+            }
+        }
+        return frecuenciaProductos;
     }
 
     public Matrix getMatrizR() {
