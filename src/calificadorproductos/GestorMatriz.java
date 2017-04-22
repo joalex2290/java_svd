@@ -296,12 +296,11 @@ public class GestorMatriz {
 
     private double promediarFilas(Matrix matriz, int p) {
         double promedioFilas = 0;
-        for (int i = 0; i == p; i++) {
-            for (int j = 0; j < matriz.getColumnDimension(); j++) {
-                promedioFilas = promedioFilas + matriz.get(i, j);
+        for (int j = 0; j < matriz.getColumnDimension(); j++) {
+                promedioFilas = promedioFilas + matriz.get(p, j);
             }
-            promedioFilas = promedioFilas / matriz.getRowDimension();
-        }
+        promedioFilas = promedioFilas / matriz.getRowDimension();
+        
         return promedioFilas;
     }
 
